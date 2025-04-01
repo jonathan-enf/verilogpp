@@ -29,6 +29,10 @@ use File::Basename;
 use lib File::Basename::dirname(abs_path($0));
 use File::Temp qw/ tempfile /;
 use test_utils;
+use Getopt::Long;
+
+my $update = 0;
+GetOptions("update" => \$update);
 
 my $expected_tests = 0;
 
@@ -55,27 +59,34 @@ my $rc = system($VPP,
                 @testfiles);
 # we don't check return codes as some test files are expected to fail.
 
+sub DiffFiles($$) {
+  my $expected = shift;
+  my $actual = shift;
+  $expected_tests += 2;
+  ok(-e $actual, "$actual exists");
+  my $rc = system("diff -c ${actual} ${expected}");
+  is($rc, 0, "Actual $actual matches expected $expected");
+  if ($rc == 0) {
+    # clean up
+    unlink($actual);
+  } elsif ($update) {
+    print("Updated ${expected}");
+    system("mv -f ${actual} ${expected}");
+  }
+}
+
 sub VerifyFile($) {
-  $expected_tests += 3;  # this method adds 3 checks.
+  $expected_tests += 1;  # this method adds 3 checks.
   my $infile = shift;
   my $outfile = $infile;
   $outfile =~ s/.vpp$/.v/;
   isnt($infile, $outfile, "$outfile named appropriately");
-  ok(-e $outfile, "$outfile exists");
-
-  my $rc = system("diff -c ${infile} ${outfile}");
-  is($rc, 0, "$outfile resynthesized identically");
-  if ($rc == 0) {
-    # clean up
-    unlink($outfile);
-  }
+  DiffFiles($infile, $outfile);
 }
 
 sub VerifyManifest() {
-  $expected_tests += 2;  # this method adds 2 checks
-  ok(-e "./preproc.manifest", "preproc.manifest exists");
-  my $rc = system("diff -c -I verilogpp\$ ./preproc.manifest.expected ./preproc.manifest");
-  is($rc, 0, "preproc.manifest contains expected checksums");
+  DiffFiles("./preproc.manifest.expected", "./preproc.manifest");
+  unlink("./preproc.manifest");
 }
 
 # invoke the preprocessor on these files:
