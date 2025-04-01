@@ -1,11 +1,11 @@
 /**INST bus_keeper.v keeper7 --style=v3**/
 /*PPSTART*/
 bus_keeper keeper7 (
-  .clk,                                                          // input
-  .reset_n,                                                      // input
-  .busNNN_valid,                                                 // input
-  .busNNN_in,                                                    // input
-  .busNNN_out                                                    // output
+  .clk,  // input
+  .reset_n,  // input
+  .busNNN_valid,  // input
+  .busNNN_in,  // input
+  .busNNN_out  // output
 );
 /*PPSTOP*/
 
@@ -15,24 +15,24 @@ bus_keeper keeper7 (
 **/
 /*PPSTART*/
 bus_keeper keeper_1 (
-  .clk,                                                          // input
-  .reset_n,                                                      // input
-  .busNNN_valid                  (bus1_valid),                   // input
-  .busNNN_in                     (bus1_in),                      // input
-  .busNNN_out                    (bus1_out)                      // output
+  .clk,  // input
+  .reset_n,  // input
+  .busNNN_valid (bus1_valid),  // input
+  .busNNN_in (bus1_in),  // input
+  .busNNN_out (bus1_out)  // output
 );
 bus_keeper keeper_2 (
-  .clk,                                                          // input
-  .reset_n,                                                      // input
-  .busNNN_valid                  (bus2_valid),                   // input
-  .busNNN_in                     (bus2_in),                      // input
-  .busNNN_out                    (bus2_out)                      // output
+  .clk,  // input
+  .reset_n,  // input
+  .busNNN_valid (bus2_valid),  // input
+  .busNNN_in (bus2_in),  // input
+  .busNNN_out (bus2_out)  // output
 );
 bus_keeper keeper_3 (
-  .clk,                                                          // input
-  .reset_n,                                                      // input
-  .busNNN_valid                  (bus3_valid),                   // input
-  .busNNN_in                     (bus3_in),                      // input
-  .busNNN_out                    (bus3_out)                      // output
+  .clk,  // input
+  .reset_n,  // input
+  .busNNN_valid (bus3_valid),  // input
+  .busNNN_in (bus3_in),  // input
+  .busNNN_out (bus3_out)  // output
 );
 /*PPSTOP*/

@@ -2190,7 +2190,7 @@ sub expand_instantiate_with_prototype {
         my $conjunction = ",\n";
         if ($i == $#params) { $conjunction = "\n"; }
         $param =~ m/.(\S+)\s*\((.+)\)/;
-        printf("  .%-29s (%s)%s", $1, $2, $conjunction);
+        printf("  .%s (%s)%s", $1, $2, $conjunction);
       }
       print ") ";
     }
@@ -2199,9 +2199,9 @@ sub expand_instantiate_with_prototype {
       for my $i (0..$#list_of_hookup_arrs) {
         my @hookup_arr = @{$list_of_hookup_arrs[$i]};
         if ($hookup_arr[1] eq "") {
-          printf "  %-61s  %s\n", $hookup_arr[0], $hookup_arr[2];
+          printf "  %s  %s\n", $hookup_arr[0], $hookup_arr[2];
         } else {
-          printf "  %-30s %-30s  %s\n", $hookup_arr[0], $hookup_arr[1], $hookup_arr[2];
+          printf "  %s %s  %s\n", $hookup_arr[0], $hookup_arr[1], $hookup_arr[2];
         }
       }
       print(");\n")
