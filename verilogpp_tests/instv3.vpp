@@ -1,6 +1,10 @@
-/**INST bus_keeper.v keeper7 --style=v3**/
+/**INST bus_keeper.v keeper7 --style=v3
+  parameter WIDTH $bits(bus1_in)
+**/
 /*PPSTART*/
-bus_keeper keeper7 (
+bus_keeper #(
+  .WIDTH ($bits(bus1_in))
+) keeper7 (
   .clk,  // input
   .reset_n,  // input
   .busNNN_valid,  // input

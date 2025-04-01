@@ -2189,7 +2189,7 @@ sub expand_instantiate_with_prototype {
         my $param = $params[$i];
         my $conjunction = ",\n";
         if ($i == $#params) { $conjunction = "\n"; }
-        $param =~ m/.(\S+)\s*\((.+)\)/;
+        $param =~ m/.(\S+?)\s*\((.+)\)/;
         printf("  .%s (%s)%s", $1, $2, $conjunction);
       }
       print ") ";
