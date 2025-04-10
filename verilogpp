@@ -2611,30 +2611,40 @@ sub expand_autonet($$) {
 
   # --init initializes undriven nets
   my $init = 0;
-  if ($macro =~ s/\s*--?init\s*//) {
+  if ($macro =~ s/\s*--?init//) {
     $init = 1;
   }
 
   # --warn warns of undriven or unloaded nets
   my $warn = 0;
-  if ($macro =~ s/\s*--?warn\s*//) {
+  if ($macro =~ s/\s*--?warn//) {
     $warn = 1;
   }
 
   # --cb auto-generates a clocking block for undriven/unloaded nets
   my $cb = 0;
-  if ($macro =~ s/\s*--?cb\s*//) {
+  if ($macro =~ s/\s*--?cb//) {
     $cb = 1;
   }
 
   my $skipif = 0;
-  if ($macro =~ s/\s*--?skipifs?\s*//) {
+  if ($macro =~ s/\s*--?skipifs?//) {
     $skipif = 1;
   }
 
   my $style = $main::config{"style"};
-  if ($macro =~ s/^(.*)--style=(\S+)/$1/) {
+  if ($macro =~ s/\s*--style=(\S+)//) {
     $style = $2;
+  }
+
+  my @filters = [];
+  my @macro_lines = split(/\s*[\r\n]\s*/, $macro);
+  foreach my $line (@macro_lines) {
+    $line =~ s/^\s+//;
+    $line =~ s/\s+$//;
+    if ($line =~ m/^m/) {
+      push(@filters, $line);
+    }
   }
 
   # parse the input and output ports of this module
@@ -2648,6 +2658,18 @@ sub expand_autonet($$) {
   my $cb_signals = new SignalSet();
 
   foreach my $s (@sigs) {
+    if ($#filters > 0) {
+      my $matched = 0;
+      $_ = $s;
+      foreach my $filt (@filters) {
+        my $result = eval($filt);
+        if ($result) { $matched = 1; }
+      }
+
+      if (!$matched) {
+        next;
+      }
+    }
     # if signal is in this module's interface, autonet should
     # skip it:
     if ($my_interface->HasPort($s)) {
