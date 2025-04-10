@@ -6,33 +6,19 @@ module inst_of_unpacked (
   output [7:0] fee [0:10-1],
 
   /**AUTOINTERFACE --indent_like_macro **/
-
-
   /*PPSTART*/
-
-
     output wire [7:0] bar,
-
-
     input  wire       fee_en[0:10-1],
-
-
     input  wire [7:0] foo[0:5],
-
-
     input  wire       foo_en[0:5]
-
-
   /*PPSTOP*/
 );
 
-
+// foo
 /**AUTONET --init **/
 /*PPSTART*/
 
 /*PPSTOP*/
-
-
 
 /**INST unpacked.v u_unpacked **/
 /*PPSTART*/
@@ -45,21 +31,19 @@ unpacked u_unpacked (
 );
 /*PPSTOP*/
 
-
-/**INST unpackedN.v u_unpackedN
-parameter N 10
-s/^foo/fee/;
-**/
-/*PPSTART*/
-unpackedN #(
-  .N(10)) u_unpackedN (
-  .clk (clk),
-  .reset_n (reset_n),
-  .foo (fee),
-  .foo_en (fee_en),
-  .bar (bar)
-);
-/*PPSTOP*/
-
+    /**INST unpackedN.v u_unpackedN --indent_like_macro
+       parameter N 10
+       s/^foo/fee/;
+    **/
+    /*PPSTART*/
+    unpackedN #(
+      .N(10)) u_unpackedN (
+      .clk (clk),
+      .reset_n (reset_n),
+      .foo (fee),
+      .foo_en (fee_en),
+      .bar (bar)
+    );
+    /*PPSTOP*/
 
 endmodule

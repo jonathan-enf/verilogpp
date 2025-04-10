@@ -1,7 +1,8 @@
-e256b6b608a8c4ac58ea433446df69ad  ../verilogpp
+6994bc63e5e3576d9d88eef36b78f747  ../verilogpp
 ffa007a4806acae2aa22fae129423ebb  autocb.vpp
 e650ff66cc1639b0412f5194bcbeb6f0  autoif.vpp
 9f674854fe70f5e5441f7916c0f2e099  autoif_generate_fr.vpp
+bea9a1d60c1ebbe387422dc44b39d13d  autoif_indented.vpp
 bcafe31cdbc3425c992abed300acfbcb  autoif_v3.vpp
 2081fa73bc3e07c4f327902e67365f1f  autointerface_with_interface.vpp
 9590c1ebb34580fbc1e73b575bb94d74  autonc.vpp
