@@ -1513,7 +1513,7 @@ sub expand_macro($$) {
   my ($label, $function) = @_;
   main::log_debug("expanding $label");
 
-  $self->{text} =~ s{(\s*)(/\*\*${label}\b.*?\*/)}
+  $self->{text} =~ s{([ \t]*)(/\*\*${label}\b.*?\*/)}
    { main::log_info("found $label");
      "${1}" . $self->run_macro($2, $function, $1)}egxs;
 }
