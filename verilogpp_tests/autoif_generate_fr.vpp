@@ -1,0 +1,42 @@
+// inst_of_unpacked instantiates an unpacked from unpacked.v
+
+module autoif_generate_for (
+  input wire clk,
+  input wire reset_n,
+  output [7:0] fee [0:10-1],
+  /**AUTOINTERFACE --style=v3 **/
+/*PPSTART*/
+
+/*PPSTOP*/
+);
+
+/**AUTONET --init **/
+/*PPSTART*/
+wire [1:0] foo_arr;
+/*PPSTOP*/
+
+
+for (genvar ii = 0; ii < 4; ii++) begin : gen_instances
+/**INST drive_two.v drive_two
+   s/foo/foo_arr[ii]/;
+**/
+/*PPSTART*/
+drive_two drive_two (
+  .foo (foo_arr[ii])
+);
+/*PPSTOP*/
+end : gen_instances
+
+for (genvar ii = 0; ii < 4; ii++) begin : gen_sink_instances
+/**INST sink_two.v sink_two
+   s/foo/foo_arr[ii]/;
+**/
+/*PPSTART*/
+drive_one sink_two (
+  .foo (foo_arr[ii])
+);
+/*PPSTOP*/
+
+end : gen_sink_instances
+
+endmodule
