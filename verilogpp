@@ -143,6 +143,7 @@ $config{"fsm_state_suffix"} = ""; # String appended to state signals
 $config{"enable_footer"} = 1;  # writes a timestamp comment at end of each file
 $config{"depend_mode"} = 0;  # generate a dependency comment instead of `include.
 $config{"generated_code_marker"} = "";  # extra indicator for generated text
+$config{"indent_like_macro"} = 0;  # enable to have code blocks indented like the macro.
 $config{"manifest"} = "";  # if set, update a manifest file when files are
                            # reprocessed.
 $config{"enum_states"} = 1;  # enumerate states by default
@@ -176,6 +177,10 @@ sub log_debug {
   if ($main::verbose > 0) {
     print STDERR "DEBUG: @_\n";
   }
+}
+
+sub log_info {
+  print STDERR "INFO: @_\n";
 }
 
 # Search INCDIR for a file.
@@ -1441,9 +1446,10 @@ sub set_text {
 # macro expansion.
 #
 # returns the expanded macro in a consistent format.
-sub run_macro($$$) {
+sub run_macro($$$$) {
   my $self = shift;
-  my ($text, $function) = @_;
+  my ($text, $function, $indent) = @_;
+  warn("DEBUG: aaa");
 
   # trim cruft:
   my $macro = $text; # copy
@@ -1455,12 +1461,18 @@ sub run_macro($$$) {
 
   $macro =~ s/\\\s*\r?\n\r?\s*/ /gsmo;  # unsplit continued lines.
 
+  my $indent_like_macro = $main::config{"indent_like_macro"};
+  if ($macro =~ s/\s*--indent_like_macro//) {
+    $indent_like_macro = 1;
+  }
+
   my $marker = $main::config{"generated_code_marker"};
   # if --mark is specified for any macro, insert a marker before all generated
   # code.
   if ($macro =~ s/^(.*?)--?mark/$1/) {
     $marker = "/**/";
   }
+  warn("DEBUG: foo1");
 
   # capture the stdout of the macro-processing function.
   my $result = "";
@@ -1471,16 +1483,23 @@ sub run_macro($$$) {
   close $o;
   chomp($result);
 
+  say STDERR "DEBUG: foo2: ${marker}";
   if ($marker ne "") {
-    $result =~ s/^/$marker /gmo;
-    $result =~ s/ $//gmo;
+    $marker = "${marker} ";
   }
+  if (!$indent_like_macro) {
+    $indent = "";
+  }
+  $marker = "${indent}${marker}";
+  say STDERR "DEBUG: foo3: ${marker}";
+  $result =~ s/^/$marker/gmo;
+  $result =~ s/ $//gmo;
 
   # return the expanded macro:
   if ($result =~ m/^\s*$/ && $main::config{"omit_empty"}) {
     return "${text}";
   } else {
-    return "${text}\n/*PPSTART*/\n${result}\n/*PPSTOP*/\n";
+    return "${text}\n${indent}/*PPSTART*/\n${result}\n${indent}/*PPSTOP*/\n";
   }
 }
 
@@ -1494,8 +1513,9 @@ sub expand_macro($$) {
   my ($label, $function) = @_;
   main::log_debug("expanding $label");
 
-  $self->{text} =~ s{(/\*\*${label}\b.*?\*/)}
-   {$self->run_macro($1, $function)}egxs;
+  $self->{text} =~ s{(\s*)(/\*\*${label}\b.*?\*/)}
+   { main::log_info("found $label");
+     "${1}" . $self->run_macro($2, $function, $1)}egxs;
 }
 
 sub normalize_path($) {
@@ -1507,7 +1527,7 @@ sub expand_all_macros {
   my $self = shift;
 
   # delete old preprocessor output
-  my $count = ($self->{text} =~ s{\n?/\*PPSTART\*/.*?/\*PPSTOP\*/\n}{}gso);
+  my $count = ($self->{text} =~ s{\n?\s*/\*PPSTART\*/.*?\s*/\*PPSTOP\*/\n}{}gso);
 
   # operations
   if (!$main::trim) {
