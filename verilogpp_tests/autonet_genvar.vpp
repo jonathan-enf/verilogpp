@@ -17,10 +17,10 @@ wire  rev_valid;
 reg  rst_n = '0;
 /*PPSTOP*/
 
-for (genvar ii = 0; ii < 6; ii++) begin : gen_instances
+for (array_dims ii = 0; ii < 6; ii++) begin : gen_instances
   /**INST typed_module.v typed_module --style=v2 --indent_like_macro
   parameter TYPE_T my_fancy_t[1:0]
-  genvar ii 6-1:0
+  array_dims ii 6-1:0
   s/fwd_(\S+)/fwd_${1}[ii]/;
   **/
   /*PPSTART*/

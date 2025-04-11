@@ -17,7 +17,7 @@ drive_one drive_one_1 (
 );
 /*PPSTOP*/
 
-for (genvar ii = 0; ii < 2; ii += 1) begin : g_sink
+for (array_dims ii = 0; ii < 2; ii += 1) begin : g_sink
 /**INST sink_one.v sink_one
   .foo(bar[ii])
 **/

@@ -733,16 +733,18 @@ map to signals that are indexes in an array.  For example:
 
      s/_out$/_out[ii]/;
 
-In order for AUTONET and AUTOINTERFACE to know the dimensionality of the
-associated signals, the "genvar" directive can be added to the INST macro.
-This "genvar" directive looks like this:
+Additionally: the "array_dims" directive can be used to inform verilogpp of the
+correct size of arrayed signals who are presented to INST macros as slices (for
+example, in generate-for loops).  This directive tells an INST macro to map a
+specific signal's slice to an array of a specific size, like this:
 
-    genvar ii kNumChips-1:0
+    array_dims ii kNumChips-1:0
 
-Where "ii" is the name of the genvar used in the generate-for loop, and "kNumChips-1:0"
-is a range to be used to add one extra dimension to any net with a "[ii]" suffix
-in it.  So, in our example, instead of `foo_out` being type `foo_t [3:0] foo_out`, `foo_out`
-would instead be declared as `foo_t [kNumChips-1:0][3:0] foo_out`.
+Where "ii" is the name of the array_dims used in the generate-for loop, and
+"kNumChips-1:0" is a range to be used to add one extra dimension to any net
+with a "[ii]" suffix in it.  So, in our example, instead of `foo_out` being
+type `foo_t [3:0] foo_out`, `foo_out` would instead be declared as `foo_t
+[kNumChips-1:0][3:0] foo_out`.
 
 See also: the AUTONET, AUTOINTERFACE, and FORINST macros.
 

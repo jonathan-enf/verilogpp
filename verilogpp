@@ -1743,15 +1743,15 @@ sub parse_instantiate_macro($$) {
   $mapper->{LOCALPARAMS} = \%LOCALPARAMS;
 
   #
-  # parse out genvar hacks
+  # parse out array_dims hacks
   #
   # This lets us say things like:
-  #    genvar ii 7:0
+  #    array_dims ii 7:0
   # to tell the code to infer that a signal named "foo[ii]" is a slice of a
   # data type that has an outer dimension of "[7:0]".
   #
   my %GENVARS = ();
-  while ($macro =~ s/^\s*genvar\s+(\S+)\s+(\S+)\s*$//mso) {
+  while ($macro =~ s/^\s*array_dims\s+(\S+)\s+(\S+)\s*$//mso) {
     $GENVARS{$1} = $2;
   }
   $mapper->{GENVARS} = \%GENVARS;
@@ -1813,9 +1813,9 @@ sub keep_track_of_used_net {
   my $port = $prototype->GetPortByName($signal);
   my $normalized_net = $mapped_signal;
   my $extra_dims = "";
-  for my $genvar (keys(%{$mapper->{GENVARS}})) {
-    if ($normalized_net =~ s/\[${genvar}\]//) {
-      $extra_dims .= "[" . $mapper->{GENVARS}->{$genvar} . "]";
+  for my $array_dims (keys(%{$mapper->{GENVARS}})) {
+    if ($normalized_net =~ s/\[${array_dims}\]//) {
+      $extra_dims .= "[" . $mapper->{GENVARS}->{$array_dims} . "]";
     }
   }
   $normalized_net =~ s/\s*\[ [^\]]* \]\s*//gx;  # strip away slice operators.
