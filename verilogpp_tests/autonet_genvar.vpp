@@ -1,6 +1,6 @@
 // inst_of_unpacked instantiates an unpacked from unpacked.v
 
-module inst_of_mod_with_interface (
+module autonet_genvar (
   input wire clk,
   input wire reset_n );
 

@@ -727,6 +727,23 @@ ports of INST-instantiated submodules.  Additionally, the AUTOINTERFACE macro
 can be used to propagate unbound ports from INST-instantiated submodules to the
 module interface.
 
+The INST macro also contains some very limited support for instantiating
+modules inside a generate-for loop.  In that context, ports will often
+map to signals that are indexes in an array.  For example:
+
+     s/_out$/_out[ii]/;
+
+In order for AUTONET and AUTOINTERFACE to know the dimensionality of the
+associated signals, the "genvar" directive can be added to the INST macro.
+This "genvar" directive looks like this:
+
+    genvar ii kNumChips-1:0
+
+Where "ii" is the name of the genvar used in the generate-for loop, and "kNumChips-1:0"
+is a range to be used to add one extra dimension to any net with a "[ii]" suffix
+in it.  So, in our example, instead of `foo_out` being type `foo_t [3:0] foo_out`, `foo_out`
+would instead be declared as `foo_t [kNumChips-1:0][3:0] foo_out`.
+
 See also: the AUTONET, AUTOINTERFACE, and FORINST macros.
 
 Example:
