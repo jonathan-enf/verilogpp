@@ -549,7 +549,14 @@ sub AsNet($$$) {
   my $self = shift;
   my $mapped_signal = shift;
   my $mapper = shift;
+  my $extra_dims = shift;
   my $width = $self->{width};
+  # If "extra_dims" contained "[1:0]", we would want
+  # to transform the "width" (the packed type attribute)
+  # in the following manner:
+  #    logic [7:0]  --> logic [1:0][7:0]
+  #    foobar_t     --> foobar_t [1:0]
+  #    foo_t[3:0]   --> foo_t [1:0][3:0]
   my $unpacked = [];
   if (defined($self->{unpacked})) {
     $unpacked = [ @{$self->{unpacked}} ];
@@ -566,6 +573,12 @@ sub AsNet($$$) {
     for (my $i = 0; $i <= $#{$unpacked}; $i++) {
       $unpacked->[$i] =~ s/\b${key}\b/$mapper->{LOCALPARAMS}->{$key}/g;
     }
+  }
+  my $idx = index($width, "[");
+  if ($idx == -1) {
+    $width .= $extra_dims;
+  } else {
+    substr($width, $idx, 0) = $extra_dims;
   }
   my $n = new Net($mapped_signal, $width);
   if ($#{$unpacked} >= 0) {
@@ -1449,7 +1462,6 @@ sub set_text {
 sub run_macro($$$$) {
   my $self = shift;
   my ($text, $function, $indent) = @_;
-  warn("DEBUG: aaa");
 
   # trim cruft:
   my $macro = $text; # copy
@@ -1472,7 +1484,6 @@ sub run_macro($$$$) {
   if ($macro =~ s/^(.*?)--?mark/$1/) {
     $marker = "/**/";
   }
-  warn("DEBUG: foo1");
 
   # capture the stdout of the macro-processing function.
   my $result = "";
@@ -1483,7 +1494,6 @@ sub run_macro($$$$) {
   close $o;
   chomp($result);
 
-  say STDERR "DEBUG: foo2: ${marker}";
   if ($marker ne "") {
     $marker = "${marker} ";
   }
@@ -1491,7 +1501,6 @@ sub run_macro($$$$) {
     $indent = "";
   }
   $marker = "${indent}${marker}";
-  say STDERR "DEBUG: foo3: ${marker}";
   $result =~ s/^/$marker/gmo;
   $result =~ s/ $//gmo;
 
@@ -1511,10 +1520,9 @@ sub run_macro($$$$) {
 sub expand_macro($$) {
   my $self = shift;
   my ($label, $function) = @_;
-  main::log_debug("expanding $label");
 
   $self->{text} =~ s{([ \t]*)(/\*\*${label}\b.*?\*/)}
-   { main::log_info("found $label");
+   { main::log_debug("found $label");
      "${1}" . $self->run_macro($2, $function, $1)}egxs;
 }
 
@@ -1735,6 +1743,20 @@ sub parse_instantiate_macro($$) {
   $mapper->{LOCALPARAMS} = \%LOCALPARAMS;
 
   #
+  # parse out genvar hacks
+  #
+  # This lets us say things like:
+  #    genvar ii 7:0
+  # to tell the code to infer that a signal named "foo[ii]" is a slice of a
+  # data type that has an outer dimension of "[7:0]".
+  #
+  my %GENVARS = ();
+  while ($macro =~ s/^\s*genvar\s+(\S+)\s+(\S+)\s*$//mso) {
+    $GENVARS{$1} = $2;
+  }
+  $mapper->{GENVARS} = \%GENVARS;
+
+  #
   # parse out overrides
   #
   my %OVERRIDES = ();
@@ -1790,13 +1812,19 @@ sub keep_track_of_used_net {
 
   my $port = $prototype->GetPortByName($signal);
   my $normalized_net = $mapped_signal;
+  my $extra_dims = "";
+  for my $genvar (keys(%{$mapper->{GENVARS}})) {
+    if ($normalized_net =~ s/\[${genvar}\]//) {
+      $extra_dims .= "[" . $mapper->{GENVARS}->{$genvar} . "]";
+    }
+  }
   $normalized_net =~ s/\s*\[ [^\]]* \]\s*//gx;  # strip away slice operators.
   if (!defined($self->{NETS}->{$normalized_net})) {
     # This is the first time we've encountered this
     # wire.
-    $self->{NETS}->{$normalized_net} = $port->AsNet($normalized_net, $mapper);
+    $self->{NETS}->{$normalized_net} = $port->AsNet($normalized_net, $mapper, $extra_dims);
   } else {
-    $self->{NETS}->{$normalized_net}->MakeCompatibleWith($port->AsNet($normalized_net, $mapper));
+    $self->{NETS}->{$normalized_net}->MakeCompatibleWith($port->AsNet($normalized_net, $mapper, $extra_dims));
   }
 
   # update count of loads and drivers:

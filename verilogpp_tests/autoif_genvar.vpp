@@ -13,11 +13,12 @@ module autoif_generate_for (
 // TODO(jonathan): fix this:
 /**AUTONET --init **/
 /*PPSTART*/
-wire [1:0] foo_arr;
+wire [3:0][1:0] foo_arr;
 /*PPSTOP*/
 
 for (genvar ii = 0; ii < 4; ii++) begin : gen_instances
 /**INST drive_two.v drive_two
+   genvar ii 3:0
    s/foo/foo_arr[ii]/;
 **/
 /*PPSTART*/
@@ -29,6 +30,7 @@ end : gen_instances
 
 for (genvar ii = 0; ii < 4; ii++) begin : gen_sink_instances
 /**INST sink_two.v sink_two
+   genvar ii 3:0
    s/foo/foo_arr[ii]/;
 **/
 /*PPSTART*/

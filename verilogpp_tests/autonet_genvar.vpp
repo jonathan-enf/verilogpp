@@ -1,0 +1,42 @@
+// inst_of_unpacked instantiates an unpacked from unpacked.v
+
+module inst_of_mod_with_interface (
+  input wire clk,
+  input wire reset_n );
+
+axi4_if axi(.clk, .reset_n);
+
+/**AUTONET --init --skipif **/
+/*PPSTART*/
+my_fancy_t[6-1:0][1:0] fwd_data = '0;
+wire [6-1:0] fwd_ready;
+reg [6-1:0] fwd_valid = '0;
+my_fancy_t[1:0] rev_data;
+reg  rev_ready = '0;
+wire  rev_valid;
+reg  rst_n = '0;
+/*PPSTOP*/
+
+for (genvar ii = 0; ii < 6; ii++) begin : gen_instances
+  /**INST typed_module.v typed_module --style=v2 --indent_like_macro
+  parameter TYPE_T my_fancy_t[1:0]
+  genvar ii 6-1:0
+  s/fwd_(\S+)/fwd_${1}[ii]/;
+  **/
+  /*PPSTART*/
+  typed_moduled #(
+    .TYPE_T(my_fancy_t[1:0])
+  ) typed_module (
+    .clk,                        // input
+    .rst_n,                      // input
+    .fwd_data   (fwd_data[ii]),  // input
+    .fwd_valid  (fwd_valid[ii]), // input
+    .fwd_ready  (fwd_ready[ii]), // output
+    .rev_data,                   // output
+    .rev_valid,                  // output
+    .rev_ready                   // input
+  );
+  /*PPSTOP*/
+end : gen_instances
+
+endmodule
