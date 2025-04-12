@@ -574,11 +574,16 @@ sub AsNet($$$) {
       $unpacked->[$i] =~ s/\b${key}\b/$mapper->{LOCALPARAMS}->{$key}/g;
     }
   }
-  my $idx = index($width, "[");
-  if ($idx == -1) {
-    $width .= $extra_dims;
-  } else {
-    substr($width, $idx, 0) = $extra_dims;
+  if ($extra_dims ne "") {
+    my $idx = index($width, "[");
+    if ($idx == -1) {
+      if ($width ne "") {
+        $width .= " ";
+      }
+      $width .= $extra_dims;
+    } else {
+      substr($width, $idx, 0) = $extra_dims;
+    }
   }
   my $n = new Net($mapped_signal, $width);
   if ($#{$unpacked} >= 0) {
@@ -1750,11 +1755,11 @@ sub parse_instantiate_macro($$) {
   # to tell the code to infer that a signal named "foo[ii]" is a slice of a
   # data type that has an outer dimension of "[7:0]".
   #
-  my %GENVARS = ();
+  my %ARRAY_DIMS = ();
   while ($macro =~ s/^\s*array_dims\s+(\S+)\s+(\S+)\s*$//mso) {
-    $GENVARS{$1} = $2;
+    $ARRAY_DIMS{$1} = $2;
   }
-  $mapper->{GENVARS} = \%GENVARS;
+  $mapper->{ARRAY_DIMS} = \%ARRAY_DIMS;
 
   #
   # parse out overrides
@@ -1813,12 +1818,14 @@ sub keep_track_of_used_net {
   my $port = $prototype->GetPortByName($signal);
   my $normalized_net = $mapped_signal;
   my $extra_dims = "";
-  for my $array_dims (keys(%{$mapper->{GENVARS}})) {
-    if ($normalized_net =~ s/\[${array_dims}\]//) {
-      $extra_dims .= "[" . $mapper->{GENVARS}->{$array_dims} . "]";
+  for my $array_dims (keys(%{$mapper->{ARRAY_DIMS}})) {
+    if ($normalized_net =~ s/\[\Q${array_dims}\E\]//) {
+      $extra_dims .= "[" . $mapper->{ARRAY_DIMS}->{$array_dims} . "]";
     }
   }
-  $normalized_net =~ s/\s*\[ [^\]]* \]\s*//gx;  # strip away slice operators.
+  while ($normalized_net =~ s/\s*(\[ [^\]]* \])\s*//x) {
+    main::log_info("${normalized_net}: removed slice: ${1}");
+  }
   if (!defined($self->{NETS}->{$normalized_net})) {
     # This is the first time we've encountered this
     # wire.
