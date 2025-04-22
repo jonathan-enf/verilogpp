@@ -2418,11 +2418,13 @@ sub expand_autonc($$) {
   }
 
   if (@tieoffs) {
+    @tieoffs = sort @tieoffs;
     foreach my $s (@tieoffs) {
       print "assign $s = '0;\n";
     }
   }
   if (@unused) {
+    @unused = sort @unused;
     if (@tieoffs) { print "\n"; }
     print "logic lint_unused_signals;\n";
     print "assign lint_unused_signals =\n";
