@@ -2212,8 +2212,10 @@ sub expand_instantiate_with_prototype {
     $self->keep_track_of_used_net($prototype, $signal, $mapped_signal, $mapper);
   }
   # trim final comma from last port:
-  $list_of_hookup_arrs[-1]->[0] =~ s/,$//;
-  $list_of_hookup_arrs[-1]->[1] =~ s/,$//;
+  if ($#list_of_hookup_arrs > 0) {
+    $list_of_hookup_arrs[-1]->[0] =~ s/,$//;
+    $list_of_hookup_arrs[-1]->[1] =~ s/,$//;
+  }
 
   #
   # print module instantiation
