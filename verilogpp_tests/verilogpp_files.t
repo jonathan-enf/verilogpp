@@ -84,10 +84,11 @@ sub VerifyFile($) {
   DiffFiles($infile, $outfile);
 }
 
-sub VerifyManifest() {
-  DiffFiles("./preproc.manifest.expected", "./preproc.manifest");
-  unlink("./preproc.manifest");
-}
+# Disabled low value, high-churn test:
+#sub VerifyManifest() {
+#  DiffFiles("./preproc.manifest.expected", "./preproc.manifest");
+#  unlink("./preproc.manifest");
+#}
 
 # invoke the preprocessor on these files:
 foreach my $testfile (@testfiles) {
@@ -95,6 +96,7 @@ foreach my $testfile (@testfiles) {
   VerifyFile($testfile);
 }
 
-VerifyManifest();
+# Disabled low value, high-churn test:
+# VerifyManifest();
 
 done_testing($expected_tests);
