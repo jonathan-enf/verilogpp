@@ -2514,6 +2514,16 @@ sub expand_autointerface($$) {
     $style = $2;
   }
 
+  my @filters = [];
+  my @macro_lines = split(/\s*[\r\n]\s*/, $macro);
+  foreach my $line (@macro_lines) {
+    $line =~ s/^\s+//;
+    $line =~ s/\s+$//;
+    if ($line =~ m/^m/) {
+      push(@filters, $line);
+    }
+  }
+
   # parse the input and output ports of this module
   my $my_interface = new ModuleSpec()->parse_prototype($self->{text});
 
@@ -2528,6 +2538,19 @@ sub expand_autointerface($$) {
     # Skip constants and expressions
     next unless ($s =~ m/[[:alpha:]]/);  # Must have a letter
     next if ($s =~ m/\W/);  # Must only contain "word" characters.
+
+    # If we have filters enabled, skip signals that don't match filters.
+    if ($#filters > 0) {
+      my $matched = 0;
+      $_ = $s;
+      foreach my $filt (@filters) {
+        my $result = eval($filt);
+        if ($result) { $matched = 1; }
+      }
+      if (!$matched) {
+        next;
+      }
+    }
 
     # examine each net:
     my $ref = $self->{NETS}->{$s};
