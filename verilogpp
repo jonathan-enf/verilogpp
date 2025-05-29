@@ -139,6 +139,7 @@ $config{"register_delay"} = "#1ns";
 $config{"autonet_allwires"} = 0;
 $config{"prettyprint"} = 0; # Set to enable "pretty" generated code
 $config{"style"} = "default";
+$config{"min_type_width"} = 0; # v3 style only: don't pad type names by default
 $config{"fsm_state_suffix"} = ""; # String appended to state signals
 $config{"enable_footer"} = 1;  # writes a timestamp comment at end of each file
 $config{"depend_mode"} = 0;  # generate a dependency comment instead of `include.
@@ -2509,6 +2510,7 @@ sub expand_autointerface($$) {
   my $self = shift;
   my $macro = shift;
 
+  my $min_type_width = $main::config{"min_type_width"};
   my $style = $main::config{"style"};
   if ($macro =~ s/^(.*)--style=(\S+)/$1/) {
     $style = $2;
@@ -2582,7 +2584,10 @@ sub expand_autointerface($$) {
       @p = grep {!/^$/} @p;
       if ($p[1] eq "input") { $p[1] = "input "; }
       if ($p[1] eq "inout") { $p[1] = "inout "; }
-      print (join(" ", @p));
+      my $signame = pop @p;
+      my $nettype = join(" ", @p[2 .. $#p]);
+      my $formatstr = "%s %s %-${min_type_width}s %s";
+      printf ($formatstr, $p[0], $p[1], $nettype, $signame);
       if ($i == $#ports) {
         print "\n";
       } else {
