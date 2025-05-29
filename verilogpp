@@ -2585,9 +2585,13 @@ sub expand_autointerface($$) {
       if ($p[1] eq "input") { $p[1] = "input "; }
       if ($p[1] eq "inout") { $p[1] = "inout "; }
       my $signame = pop @p;
-      my $nettype = join(" ", @p[2 .. $#p]);
-      my $formatstr = "%s %s %-${min_type_width}s %s";
-      printf ($formatstr, $p[0], $p[1], $nettype, $signame);
+      $signame =~ s/^\s+|\s+$//g;
+      my $dir_and_nettype = join(" ", @p[1 .. $#p]);
+      $dir_and_nettype =~ s/^\s+|\s+$//g;
+      my $indent = $p[0];
+      my $min_width = $min_type_width + 6;  # type width + direction
+      my $formatstr = "%s %-${min_width}s %s";
+      printf ($formatstr, $p[0], $dir_and_nettype, $signame);
       if ($i == $#ports) {
         print "\n";
       } else {
