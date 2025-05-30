@@ -140,6 +140,7 @@ $config{"autonet_allwires"} = 0;
 $config{"prettyprint"} = 0; # Set to enable "pretty" generated code
 $config{"style"} = "default";
 $config{"min_type_width"} = 0; # v3 style only: don't pad type names by default
+$config{"sort_autoif"} = 0;  # sorts autointerface output.
 $config{"fsm_state_suffix"} = ""; # String appended to state signals
 $config{"enable_footer"} = 1;  # writes a timestamp comment at end of each file
 $config{"depend_mode"} = 0;  # generate a dependency comment instead of `include.
@@ -2605,7 +2606,13 @@ sub expand_autointerface($$) {
       my $line = sprintf ($formatstr, $p[0], $dir_and_nettype, $signame);
       push (@text, $line);
     }
-    print(join(",\n", sort @text) . "\n");
+    if ($sort_autoif == 1) {
+      print ("// SORTED $sort_autoif\n");
+      @text = sort @text;
+    } else {
+      print ("//not sorted $sort_autoif\n");
+    }
+    print(join(",\n", @text) . "\n");
   } else {
     print &main::TabularAlign(\@ports, ",\n"), "\n";
   }
