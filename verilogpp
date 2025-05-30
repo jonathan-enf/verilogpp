@@ -2607,10 +2607,7 @@ sub expand_autointerface($$) {
       push (@text, $line);
     }
     if ($sort_autoif == 1) {
-      print ("// SORTED $sort_autoif\n");
       @text = sort @text;
-    } else {
-      print ("//not sorted $sort_autoif\n");
     }
     print(join(",\n", @text) . "\n");
   } else {
