@@ -2505,15 +2505,25 @@ The above example might expand to something like this:
     /*PPSTOP*/
 
     endmodule
+
+Additional options:
+
+* `--style=<style>` can be used to override the default styling.  ie. `--style=v3`
+
+* `--sort` can be used to force the interface lines to be sorted alphanumerically.
 EOT
 sub expand_autointerface($$) {
   my $self = shift;
   my $macro = shift;
 
   my $min_type_width = $main::config{"min_type_width"};
+  my $sort_autoif = $main::config{"sort_autoif"};
   my $style = $main::config{"style"};
   if ($macro =~ s/^(.*)--style=(\S+)/$1/) {
     $style = $2;
+  }
+  if ($macro =~ s/^(.*)--sort(ed)?/$1/) {
+    $sort_autoif = 1;
   }
 
   my @filters = [];
@@ -2579,6 +2589,7 @@ sub expand_autointerface($$) {
 
   &main::Pad2DArray(\@ports, 2, 5);
   if ($style eq "v3") {
+    my @text = ();
     for my $i (0..$#ports) {
       my @p = @{$ports[$i]};
       @p = grep {!/^$/} @p;
@@ -2591,13 +2602,10 @@ sub expand_autointerface($$) {
       my $indent = $p[0];
       my $min_width = $min_type_width + 6;  # type width + direction
       my $formatstr = "%s %-${min_width}s %s";
-      printf ($formatstr, $p[0], $dir_and_nettype, $signame);
-      if ($i == $#ports) {
-        print "\n";
-      } else {
-        print ",\n";
-      }
+      my $line = sprintf ($formatstr, $p[0], $dir_and_nettype, $signame);
+      push (@text, $line);
     }
+    print(join(",\n", sort @text) . "\n");
   } else {
     print &main::TabularAlign(\@ports, ",\n"), "\n";
   }

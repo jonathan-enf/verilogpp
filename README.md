@@ -69,14 +69,7 @@ versions of this tool, and new code should avoid using them.
 If possible, consider configuring your editor to "fold" all code
 between the PPSTART and PPSTOP comments out of your visual field.
 
-In VIM, the simplest way to fold generated code out of your way
-is with the following commands, suitable for adding to your
-`.vimrc` file:
-
-    set foldmarker=PPSTART,PPSTOP
-    set foldmethod=marker
-
-Or, a more complicated way:
+In VIM, you could add the following to your .vimrc file:
 
     autocmd BufWinEnter,Syntax *.v,*.sv syn region ppoutput
       \ start="\/\*PPSTART\*" end="\*PPSTOP\*" fold contains=TOP keepend
@@ -108,8 +101,10 @@ Quick links:
 
 *   [AUTOINC](#Macro_AUTOINC)
 *   [AUTOINTERFACE](#Macro_AUTOINTERFACE)
+*   [AUTONC](#Macro_AUTONC)
 *   [AUTONET](#Macro_AUTONET)
 *   [AUTOTOSTRING](#Macro_AUTOTOSTRING)
+*   [CONFIG](#Macro_CONFIG)
 *   [EXEC](#Macro_EXEC)
 *   [FIXEDPOINT](#Macro_FIXEDPOINT)
 *   [FOREACH](#Macro_FOREACH)
@@ -224,6 +219,21 @@ The above example might expand to something like this:
 
     endmodule
 
+Additional options:
+
+* `--style=<style>` can be used to override the default styling.  ie. `--style=v3`
+
+* `--sort` can be used to force the interface lines to be sorted alphanumerically.
+
+### AUTONC {#Macro_AUTONC}
+
+AUTONC can be used to declare specific nets as no-connects.
+
+The body of this macro is a list of signal names or regular expressions to
+indicate which nets to flag as no-connects.  Signals that match and
+would otherwise be undriven or unloaded are tied off.
+
+
 ### AUTONET {#Macro_AUTONET}
 
 Usage:
@@ -256,6 +266,9 @@ annotate the generated nets with warnings if a net appears to have zero
 drivers, multiple drivers, or zero load.  Note that verilogpp does not
 fully parse verilog, so AUTONET's warnings are only accurate in designs
 that only contain expansions of INST macros.
+
+If the "--skipif" option is supplied, all signals marked as interfaces
+will be omitted from the net declarations.
 
 If the "--cb" option is supplied, verilogpp will create appropriate clocking
 blocks.  verilogpp's ideas of appropriate clocking blocks are:
@@ -353,6 +366,30 @@ Expands to this output file:
       };
     endfunction
     /*PPSTOP*/
+
+
+### CONFIG {#Macro_CONFIG}
+
+The CONFIG macro can be used to set verilogpp configuration settings
+within a source file.  The contents of the CONFIG macro are a list
+of key=value attributes, one per line.
+
+Currently, only one attribute is supported:
+
+* "SUBPATH=<path>"
+
+This attribute can be supplied multiple times, to specific multiple subpaths.
+This subpath specifies an additional path component to be searched for files
+referred to by INST and FORINST macros.  The search is performed by iterating
+through each INCDIR path, and then looking for the file in each SUBPATH
+beneath each INCDIR path.
+
+Example:
+
+    /**CONFIG
+       SUBPATH=generated/ip/directory
+       SUBPATH=another/very/long/path/we/dont/want/to/type/over/and/over/again
+    **/
 
 
 ### EXEC {#Macro_EXEC}
@@ -690,13 +727,14 @@ of localparam declarations.
 
 ### INST {#Macro_INST}
 
-    /**INST <path> <instance>
+    /**INST <path> <instance> [<options>]
     <specifications> **/
 
 Where:
 
 * "path" is the path to the module to be instantiated.
 * "instance" is the instance name to use for the instantiation.
+* "options" is an optional list of flags.
 * "specifications" is a list of zero or more lines used to map port names
   onto signal names.  This can take a couple of different forms.
 
@@ -711,6 +749,17 @@ Parameters can be specified for the instantiated block like this:
 Transformation of port names onto signal names occurs by applying a
 set of transformation rules onto the port name to produce the signal
 name that port should connect to.
+
+Some modules internally define local parameters which then leak
+out of the module into the module interface.  These local localparams
+can be handled by manually computing the correct value for each
+parameter, and then overriding the symbolic name of the parameter
+in the port width.  This can be specified like this:
+
+    localparam <param-name> <param-value>
+
+Think of "localparam" as being the same as "parameter", except that a
+parameter isn't added to the "#(...)" clause of a module instantiation.
 
 The simplest transformation simply maps a port to a signal, like this:
 
@@ -727,24 +776,12 @@ ports of INST-instantiated submodules.  Additionally, the AUTOINTERFACE macro
 can be used to propagate unbound ports from INST-instantiated submodules to the
 module interface.
 
-The INST macro also contains some very limited support for instantiating
-modules inside a generate-for loop.  In that context, ports will often
-map to signals that are indexes in an array.  For example:
+Options:
 
-     s/_out$/_out[ii]/;
-
-Additionally: the "array_dims" directive can be used to inform verilogpp of the
-correct size of arrayed signals who are presented to INST macros as slices (for
-example, in generate-for loops).  This directive tells an INST macro to map a
-specific signal's slice to an array of a specific size, like this:
-
-    array_dims ii kNumChips-1:0
-
-Where "ii" is the name of the array_dims used in the generate-for loop, and
-"kNumChips-1:0" is a range to be used to add one extra dimension to any net
-with a "[ii]" suffix in it.  So, in our example, instead of `foo_out` being
-type `foo_t [3:0] foo_out`, `foo_out` would instead be declared as `foo_t
-[kNumChips-1:0][3:0] foo_out`.
+* --pretty  Turns on "pretty print" style (equivalent to --style=pretty).
+* --style   Sets the output style ("default", "v2", "pretty", "v3")
+* --compact Use compact naming for ports whose names match the connecting
+            signal (ie. ".clk" instead of ".clk(clk)").
 
 See also: the AUTONET, AUTOINTERFACE, and FORINST macros.
 

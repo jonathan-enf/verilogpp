@@ -4,12 +4,12 @@ module inst_of_unpacked (
   input wire clk,
   input wire reset_n,
   output [7:0] fee [0:10-1],
-  /**AUTOINTERFACE --style=v3 **/
+  /**AUTOINTERFACE --style=v3 --sort **/
 /*PPSTART*/
-  output wire [7:0] bar,
-  input  wire fee_en[0:10-1],
   input  wire [7:0] foo[0:5],
-  input  wire foo_en[0:5]
+  input  wire fee_en[0:10-1],
+  input  wire foo_en[0:5],
+  output wire [7:0] bar
 /*PPSTOP*/
 );
 
