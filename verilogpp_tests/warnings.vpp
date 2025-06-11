@@ -24,18 +24,19 @@ reg [`HARD2PARSE_COMMAND_WORD] control_input;  // WARNING: zero drivers
 wire [`HARD2PARSE_STATUS_WORD] control_output;  // WARNING: zero load
 wire [15:0] data_to_foobar;  // WARNING: zero load
 wire  data_to_foobar_valid;  // WARNING: zero load
-reg [31:0] foo_in32;  // WARNING: zero drivers
+wire [31:0] foo_in32;
 word_t foo_in_word;  // WARNING: zero drivers
 reg  foobar_clear_to_send;  // WARNING: zero drivers
 wire  foobar_ready_to_send;  // WARNING: zero load
 wire [31:0] in32;
 word_t in_word;  // WARNING: zero drivers
-wire [31:0] out32;  // WARNING: multiple drivers
+wire [31:0] out32;  // WARNING: multiple drivers (3 drivers)
 reg [`HARD2PARSE_COMMAND__SLOT_WIDTH-1:0] slot;  // WARNING: zero drivers
 /*PPSTOP*/
 
 // this should disable the warning for axi_rid
 assign axi_rid = 5;
+assign foo_in32 = 32'd20;
 
 /**INST bar.v u_bar1**/
 /*PPSTART*/

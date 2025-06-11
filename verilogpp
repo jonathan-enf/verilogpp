@@ -1287,7 +1287,8 @@ sub init {
   $self->{width} = shift;
   $self->{unpacked} = undef;
   # Count the ports this net is connected to:
-  $self->{count} = { 'input' => 0, 'output' => 0, 'inout' => 0, 'modport' => 0 };
+  $self->{count} = { 'input' => 0, 'output' => 0, 'inout' => 0, 'modport' => 0,
+                     'assign_to' => 0, 'assign_from' => 0 };
 }
 
 sub set_unpacked($$) {
@@ -1314,6 +1315,12 @@ sub MakeCompatibleWith($$) {
   if ($#{$other_net->{unpacked}} > $#{$self->{unpacked}}) { $self->{unpacked} = $other_net->{unpacked}; }
 }
 
+sub ClearAssignmentCounts($) {
+  my $self = shift;
+  $self->{count}->{"assign_to"} = 0;
+  $self->{count}->{"assign_from"} = 0;
+}
+
 sub CountConnection {
   my $self = shift;
   my $dir = shift;
@@ -1322,11 +1329,26 @@ sub CountConnection {
   $self->{count}->{$dir} += 1;
 }
 
-sub NumberOfConnections {
+sub NumberOfOutputConnections {
   my $self = shift;
-  my $dir = shift;
-  return $self->{count}->{$dir};
+  return $self->{count}->{'output'} + $self->{count}->{'assign_to'};
 }
+
+sub NumberOfInputConnections {
+  my $self = shift;
+  return $self->{count}->{'input'} + $self->{count}->{'assign_from'};
+}
+
+sub NumberOfInoutConnections {
+  my $self = shift;
+  return $self->{count}->{'inout'};
+}
+
+sub NumberOfModportConnections {
+  my $self = shift;
+  return $self->{count}->{'modport'};
+}
+
 
 sub Declaration() {
   my $self = shift;
@@ -1339,7 +1361,7 @@ sub Declaration() {
   if (!($no_regs || $config{"autonet_allwires"})) {
     if ($self->{count}->{inout} > 0) {
       $type = "tri";
-    } elsif ($self->{count}->{output} == 0) {
+    } elsif ($self->NumberOfOutputConnections() == 0) {
       $type = "reg";
     }
   }
@@ -1382,13 +1404,13 @@ sub Declaration() {
 sub Port {
   my $self = shift;
   my @return = ('output');
-  if ($self->NumberOfConnections('inout') > 0) {
+  if ($self->NumberOfInoutConnections() > 0) {
     @return = ('inout');
-  } elsif ($self->NumberOfConnections('output') == 0) {
+  } elsif ($self->NumberOfOutputConnections() == 0) {
     @return = ('input');
   }
   push @return, @{$self->Declaration(1)};
-  if ($self->NumberOfConnections('modport') == 1) {
+  if ($self->NumberOfModportConnections() == 1) {
     # this is an interface.  Replace the first two elements.
     shift @return for 1..2;
     unshift(@return, $self->{intf_modport});
@@ -1419,6 +1441,29 @@ sub init {
   # a "v" extension.  If it exists, use that as our input file instead.
   if (-e $self->{srcfilename} . "pp") {
     $self->{srcfilename} .= "pp";
+  }
+}
+
+sub reset_assignment_counts($) {
+  my $self = shift;
+  for my $netname (keys %{$self->{NETS}}) {
+    $self->{NETS}->{$netname}->ClearAssignmentCounts();
+  }
+}
+
+sub recount_assignments($$) {
+  my $self = shift;
+  my $my_interface = shift;
+
+  # mark assignments
+  $self->reset_assignment_counts();
+  for my $symbol_to (keys %{$my_interface->{assigns}}) {
+    # like an output from an assignment block:
+    $self->keep_track_of_assignment($symbol_to, "assign_to");
+  }
+  for my $symbol_from (keys %{$my_interface->{assign_from}}) {
+    # like an input to an assignment block:
+    $self->keep_track_of_assignment($symbol_from, "assign_from");
   }
 }
 
@@ -2363,7 +2408,7 @@ sub expand_autonc($$) {
   foreach my $line (split(/\s*\n\s*/, $macro)) {
     chomp($line);
     if ($line =~ m/^\s*$/) {continue;}
-    if ($line =~ m/^\/(.*)\/$/) {push @regexes, $1;}
+    if ($line =~ m/^!?m?\/(.*)\/;?$/) {push @regexes, $line;}
     else {push @names, $line;}
   }
 
@@ -2371,12 +2416,7 @@ sub expand_autonc($$) {
   my $my_interface = new ModuleSpec()->parse_prototype($self->{text});
 
   # mark assignments
-  for my $symbol_to (keys %{$my_interface->{assigns}}) {
-    $self->keep_track_of_assignment($symbol_to, "output");
-  }
-  for my $symbol_from (keys %{$my_interface->{assign_from}}) {
-    $self->keep_track_of_assignment($symbol_from, "input");
-  }
+  $self->recount_assignments($my_interface);
 
   my @sigs = sort keys %{$self->{NETS}};
   foreach my $s (@sigs) {
@@ -2391,10 +2431,9 @@ sub expand_autonc($$) {
       $found = 1;
     } else {
       foreach my $re (@regexes) {
-        if ($s =~ $re) {
-          $found = 1;
-          last;
-        }
+        $_ = $s;
+        my $result = eval($re);
+        if ($result) { $found = 1; last; }
       }
     }
 
@@ -2406,15 +2445,15 @@ sub expand_autonc($$) {
     next if ($s eq $main::config{"clock"});
     next if ($s eq $main::config{"reset_n"});
 
-    if ($ref->NumberOfConnections('inout') > 0) {
+    if ($ref->NumberOfInoutConnections() > 0) {
       # ignore inout signals
-    } elsif ($ref->NumberOfConnections('modport') > 0) {
+    } elsif ($ref->NumberOfModportConnections() > 0) {
       # ignore interfaces
-    } elsif ($ref->NumberOfConnections('output') == 0) {
+    } elsif ($ref->NumberOfOutputConnections() == 0) {
       # no drivers, so assign to zero.
       push @tieoffs, $s;
       $ref->{count}->{output} = 1;
-    } elsif ($ref->NumberOfConnections('input') == 0) {
+    } elsif ($ref->NumberOfInputConnections() == 0) {
       # no loads, so add to lint_unused signal list.
       push @unused, $s;
       $ref->{count}->{input} = 1;
@@ -2539,6 +2578,7 @@ sub expand_autointerface($$) {
 
   # parse the input and output ports of this module
   my $my_interface = new ModuleSpec()->parse_prototype($self->{text});
+  $self->recount_assignments($my_interface);
 
   my @sigs = sort keys %{$self->{NETS}};
   my @ports = ();
@@ -2558,7 +2598,7 @@ sub expand_autointerface($$) {
       $_ = $s;
       foreach my $filt (@filters) {
         my $result = eval($filt);
-        if ($result) { $matched = 1; }
+        if ($result) { $matched = 1; last; }
       }
       if (!$matched) {
         next;
@@ -2572,18 +2612,18 @@ sub expand_autointerface($$) {
     #
     # ... if the signal is connected to at least one bidirectional port,
     #     then we surface it as a bidirectional port.
-    if ($ref->NumberOfConnections('inout') > 0) {
+    if ($ref->NumberOfInoutConnections() > 0) {
       push (@ports, [' ', $ref->Port()]);
     # ... or, if it is not connected to any output ports, then it must
     #     be an input of the enclosing interface.
-    } elsif ($ref->NumberOfConnections('output') == 0) {
+    } elsif ($ref->NumberOfOutputConnections() == 0) {
       if (!exists($my_interface->{assigns}->{$ref->{name}})) {
         push (@ports, [' ', $ref->Port()]);
       }
     # ... or, if it is not connected to any input ports (ie. nobody
     #     within the module is listening to this signal), then it must
     #     be intended to be an output port of the enclosing interface.
-    } elsif ($ref->NumberOfConnections('input') == 0) {
+    } elsif ($ref->NumberOfInputConnections() == 0) {
       push (@ports, [' ', $ref->Port()]);
     }
   }
@@ -2612,24 +2652,6 @@ sub expand_autointerface($$) {
     print(join(",\n", @text) . "\n");
   } else {
     print &main::TabularAlign(\@ports, ",\n"), "\n";
-  }
-}
-
-sub CountAssignments {
-  my $self = shift;
-  my $my_interface = shift;
-
-  foreach my $s (keys %{$my_interface->{assigns}}) {
-    if (defined($self->{NETS}->{$s})) {
-      my $ref = $self->{NETS}->{$s};
-      $ref->CountConnection('output');
-    }
-  }
-  foreach my $s (keys %{$my_interface->{assign_from}}) {
-    if (defined($self->{NETS}->{$s})) {
-      my $ref = $self->{NETS}->{$s};
-      $ref->CountConnection('input');
-    }
   }
 }
 
@@ -2752,7 +2774,7 @@ sub expand_autonet($$) {
 
   # parse the input and output ports of this module
   my $my_interface = new ModuleSpec()->parse_prototype($self->{text});
-  $self->CountAssignments($my_interface);
+  $self->recount_assignments($my_interface);
 
   my @sigs = sort keys %{$self->{NETS}};
 
@@ -2793,52 +2815,53 @@ sub expand_autonet($$) {
     # add it to autonets list of nets:
     my $ref = $self->{NETS}->{$s};
 
-    if ($skipif && $ref->NumberOfConnections('modport') > 0) {
+    if ($skipif && $ref->NumberOfModportConnections() > 0) {
       next;
     }
 
     my $warning = "";
     if ($warn) {
-      if (($ref->NumberOfConnections('input') == 0) &&
-          ($ref->NumberOfConnections('inout') == 0)) {
+      if (($ref->NumberOfInputConnections() == 0) &&
+          ($ref->NumberOfInoutConnections() == 0)) {
         $warning = "  // WARNING: zero load";
       }
-      if (($ref->NumberOfConnections('output') == 0) &&
-          ($ref->NumberOfConnections('inout') == 0)) {
+      if (($ref->NumberOfOutputConnections() == 0) &&
+          ($ref->NumberOfInoutConnections() == 0)) {
         $warning = "  // WARNING: zero drivers";
       }
-      if ($ref->NumberOfConnections('output') > 1) {
-        $warning = "  // WARNING: multiple drivers";
+      if ($ref->NumberOfOutputConnections() > 1) {
+        my $x = $ref->NumberOfOutputConnections();
+        $warning = "  // WARNING: multiple drivers ($x drivers)";
       }
     }
 
     if ($s =~ m/^(.*_)clk$/) {
       push(@cb_clocks, $1);
     }
-    elsif (($ref->NumberOfConnections('input')  == 0) &&
-           ($ref->NumberOfConnections('output') != 0) &&
-           ($ref->NumberOfConnections('inout')  == 0)) {
+    elsif (($ref->NumberOfInputConnections()  == 0) &&
+           ($ref->NumberOfOutputConnections() != 0) &&
+           ($ref->NumberOfInoutConnections()  == 0)) {
       $cb_signals->AddSignal($s, "input");
     }
-    elsif (($ref->NumberOfConnections('input')  != 0) &&
-           ($ref->NumberOfConnections('output') == 0) &&
-           ($ref->NumberOfConnections('inout')  == 0)) {
+    elsif (($ref->NumberOfInputConnections()  != 0) &&
+           ($ref->NumberOfOutputConnections() == 0) &&
+           ($ref->NumberOfInoutConnections()  == 0)) {
       $cb_signals->AddSignal($s, "output");
     }
-    elsif (($ref->NumberOfConnections('input')  == 0) &&
-           ($ref->NumberOfConnections('output') == 0) &&
-           ($ref->NumberOfConnections('inout')  != 0)) {
+    elsif (($ref->NumberOfInputConnections()  == 0) &&
+           ($ref->NumberOfOutputConnections() == 0) &&
+           ($ref->NumberOfInoutConnections()  != 0)) {
       $cb_signals->AddSignal($s, "inout");
     }
 
     # determine what to initialize the register too, if needed.
     my $assignment = "";  # empty string by default
     if ($init) {
-      if ($ref->NumberOfConnections('modport') > 0) {
+      if ($ref->NumberOfModportConnections() > 0) {
         $assignment = "";
-      } elsif ($ref->NumberOfConnections('inout') > 0) {
+      } elsif ($ref->NumberOfInoutConnections() > 0) {
         $assignment = " = 'Z";
-      } elsif ($ref->NumberOfConnections('output') == 0) {
+      } elsif ($ref->NumberOfOutputConnections() == 0) {
         $assignment = " = '0";
       }
       if ($assignment && defined($ref->{unpacked})) {
