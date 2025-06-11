@@ -1606,11 +1606,11 @@ sub expand_all_macros {
     $self->expand_macro('FORINST', \&expand_forinst);
     $self->expand_macro('AUTOTOSTRING', \&expand_autotostring);
     $self->expand_macro('AUTOINC', \&expand_includes);
-    $self->expand_macro('AUTONC', \&expand_autonc);
     # note: AUTOINTERFACE must expand before AUTONET, as it will change
     #       AUTONET's behavior.
     $self->expand_macro('AUTOINTERFACE', \&expand_autointerface);
     $self->expand_macro('AUTONET', \&expand_autonet);
+    $self->expand_macro('AUTONC', \&expand_autonc);
     $self->expand_macro('TIEOUTPUTSTOZERO', \&expand_tieoutputs);
   }
 }
