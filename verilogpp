@@ -1745,6 +1745,11 @@ sub is_changed {
   return ($orig ne $self->{text});
 }
 
+sub _warn {
+  my @c = caller;
+  print STDERR "WARNING($c[2]): @_\n";
+}
+
 sub report_error {
   print STDERR "ERROR: @_\n";
   print "ERROR: @_\n";
@@ -2566,7 +2571,7 @@ sub expand_autointerface($$) {
     $sort_autoif = 1;
   }
 
-  my @filters = [];
+  my @filters = ();
   my @macro_lines = split(/\s*[\r\n]\s*/, $macro);
   foreach my $line (@macro_lines) {
     $line =~ s/^\s+//;
