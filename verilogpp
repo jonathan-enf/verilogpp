@@ -2412,7 +2412,7 @@ sub expand_autonc($$) {
   my @unused = ();
   foreach my $line (split(/\s*\n\s*/, $macro)) {
     chomp($line);
-    if ($line =~ m/^\s*$/) {continue;}
+    if ($line =~ m/^\s*$/) {next;}
     if ($line =~ m/^!?m?\/(.*)\/;?$/) {push @regexes, $line;}
     else {push @names, $line;}
   }
@@ -2598,12 +2598,15 @@ sub expand_autointerface($$) {
     next if ($s =~ m/\W/);  # Must only contain "word" characters.
 
     # If we have filters enabled, skip signals that don't match filters.
-    if ($#filters > 0) {
+    if ($#filters > -1) {
       my $matched = 0;
       $_ = $s;
       foreach my $filt (@filters) {
         my $result = eval($filt);
-        if ($result) { $matched = 1; last; }
+        if ($result) {
+          $matched = 1;
+          last;
+        }
       }
       if (!$matched) {
         next;
@@ -2767,7 +2770,7 @@ sub expand_autonet($$) {
     $style = $2;
   }
 
-  my @filters = [];
+  my @filters = ();
   my @macro_lines = split(/\s*[\r\n]\s*/, $macro);
   foreach my $line (@macro_lines) {
     $line =~ s/^\s+//;
@@ -2788,7 +2791,7 @@ sub expand_autonet($$) {
   my $cb_signals = new SignalSet();
 
   foreach my $s (@sigs) {
-    if ($#filters > 0) {
+    if ($#filters > -1) {
       my $matched = 0;
       $_ = $s;
       foreach my $filt (@filters) {
