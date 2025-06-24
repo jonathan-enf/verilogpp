@@ -14,7 +14,7 @@ module inst_of_unpacked (
 wire [7:0] another_output;
 wire [7:0] bar;
 wire  derived;
-reg [7:0] foo[0:5] = '{default: '0};
+wire [7:0] foo[0:5];
 wire  foo_en[0:5];
 /*PPSTOP*/
 

@@ -6,19 +6,18 @@ module inst_of_unpacked (
   output [7:0] fee [0:10-1],
   /**AUTOINTERFACE**/
 /*PPSTART*/
-  output wire [7:0] another_output,
-  output wire [7:0] bar,
-  input  wire       fee_en[0:5],
-  input  wire [7:0] fie[0:5],
-  input  wire       fie_en[0:5],
-  input  wire [7:0] foo[0:5],
-  input  wire       foo_en[0:5]
+  input wire       fee_en[0:5],
+  input wire [7:0] fie[0:5],
+  input wire       fie_en[0:5]
 /*PPSTOP*/
 );
 
 /**AUTONET --init **/
 /*PPSTART*/
-
+wire [7:0] another_output;
+wire [7:0] bar;
+wire [7:0] foo[0:5];
+wire  foo_en[0:5];
 /*PPSTOP*/
 
 /**AUTONC
@@ -29,7 +28,13 @@ module inst_of_unpacked (
   /^foo/
 **/
 /*PPSTART*/
+assign foo = '0;
+assign foo_en = '0;
 
+logic lint_unused_signals;
+assign lint_unused_signals =
+   (another_output == '0) ||
+   (bar == '0);
 /*PPSTOP*/
 
 
