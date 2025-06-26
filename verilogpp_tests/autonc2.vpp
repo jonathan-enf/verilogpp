@@ -17,15 +17,15 @@ wire [7:0] foo[0:5];
 wire  foo_en[0:5];
 /*PPSTOP*/
 
-/**AUTONC
+/**AUTONC --signal=lint_my_unused_signals
   /.+/
 **/
 /*PPSTART*/
 assign foo = '0;
 assign foo_en = '0;
 
-logic lint_unused_signals;
-assign lint_unused_signals =
+logic lint_my_unused_signals;
+assign lint_my_unused_signals =
    (another_output == '0) ||
    (bar == '0);
 /*PPSTOP*/

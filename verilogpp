@@ -1606,6 +1606,8 @@ sub expand_all_macros {
     $self->expand_macro('FORINST', \&expand_forinst);
     $self->expand_macro('AUTOTOSTRING', \&expand_autotostring);
     $self->expand_macro('AUTOINC', \&expand_includes);
+    # note: AUTONC should expand before AUTOINTERFACE, as it will change
+    #       what ports are declared in AUTOINTERFACE.
     $self->expand_macro('AUTONC', \&expand_autonc);
     # note: AUTOINTERFACE must expand before AUTONET, as it will change
     #       AUTONET's behavior.
@@ -2410,6 +2412,10 @@ sub expand_autonc($$) {
   my @names = ();
   my @tieoffs = ();
   my @unused = ();
+  my $lint_unused_signals = "lint_unused_signals";
+  if ($macro =~ s/^(.*)--signal=(\S+)/$1/){
+    $lint_unused_signals = $2;
+  }
   foreach my $line (split(/\s*\n\s*/, $macro)) {
     chomp($line);
     if ($line =~ m/^\s*$/) {next;}
@@ -2474,8 +2480,8 @@ sub expand_autonc($$) {
   if (@unused) {
     @unused = sort @unused;
     if (@tieoffs) { print "\n"; }
-    print "logic lint_unused_signals;\n";
-    print "assign lint_unused_signals =\n";
+    print "logic ${lint_unused_signals};\n";
+    print "assign ${lint_unused_signals} =\n";
     print "   ",join((" ||\n   ", map { "($_ == '0)" } @unused)),";\n";
   }
 }
