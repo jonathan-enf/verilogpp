@@ -7,10 +7,10 @@ module autonet_filtered (
 /**AUTONET --init --skipif
   m/^fwd_/;
   m/_valid$/;
+  !m/^fwd_read/;
 **/
 /*PPSTART*/
 my_type_t fwd_data = '0;
-wire  fwd_ready;
 reg  fwd_valid = '0;
 wire  rev_valid;
 /*PPSTOP*/

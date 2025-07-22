@@ -1222,11 +1222,11 @@ sub generate_output_decode_for_state($$$) {
     }
     # now override with more blocking assignments for each conditional:
     # Conditions are strictly ordered as if-else chains.
-    my $else_if = "if";   # First condition gets "if", rest get "else if"
+    my $else_if = "if";   # First condition gets "if", rest get "elsif"
     foreach my $condition (@{$decode->{$k_condition_list}}) {
       next if ($condition eq "all");
       print "${indent}${else_if} (${condition}) begin\n";
-      $else_if = "else if";
+      $else_if = "elsif";
       foreach my $var (sort keys %{$decode->{$condition}}) {
         print "${indent}  ${var} = " .  $decode->{$condition}->{$var} . ";\n";
       }
@@ -1878,7 +1878,7 @@ sub keep_track_of_used_net {
     }
   }
   while ($normalized_net =~ s/\s*(\[ [^\]]* \])\s*//x) {
-    main::log_info("${normalized_net}: removed slice: ${1}");
+    main::log_debug("${normalized_net}: removed slice: ${1}");
   }
   if (!defined($self->{NETS}->{$normalized_net})) {
     # This is the first time we've encountered this
@@ -1934,6 +1934,54 @@ sub extract_iterables($) {
   my @items = grep { length($_) > 0 }
               split (m/\s+/, $items);
   return $text, \@items;
+}
+
+sub extract_filters($) {
+  my $macro = shift;
+  my @pos_filters = ();
+  my @neg_filters = ();
+  my @macro_lines = split(/\s*[\r\n]\s*/, $macro);
+  foreach my $line (@macro_lines) {
+    $line =~ s/^\s+//;
+    $line =~ s/\s+$//;
+    if ($line =~ m/^\s*$/) {
+      next;
+    } elsif ($line =~ m/^!(.*)/) {
+      push(@neg_filters, $1);
+    } else {
+      push(@pos_filters, $line);
+    }
+  }
+  return (\@pos_filters, \@neg_filters);
+}
+
+sub apply_filters($@) {
+  my $text = shift;
+  my $pos_filters_ref = shift;
+  my $neg_filters_ref = shift;
+
+  my $matched = 1;
+  if ($#$pos_filters_ref > -1) {
+    $matched = 0;
+    $_ = $text;
+    foreach my $filt (@$pos_filters_ref) {
+      my $result = eval($filt);
+      if ($result) {
+        $matched = 1;
+        last;
+      }
+    }
+  }
+  if ($#$neg_filters_ref > -1) {
+    foreach my $filt (@$neg_filters_ref) {
+      my $result = eval($filt);
+      if ($result) {
+        $matched = 0;
+        last;
+      }
+    }
+  }
+  return $matched;
 }
 
 $MacroHelp{'FORINST'} = <<EOT ;
@@ -2577,15 +2625,7 @@ sub expand_autointerface($$) {
     $sort_autoif = 1;
   }
 
-  my @filters = ();
-  my @macro_lines = split(/\s*[\r\n]\s*/, $macro);
-  foreach my $line (@macro_lines) {
-    $line =~ s/^\s+//;
-    $line =~ s/\s+$//;
-    if ($line =~ m/^m/) {
-      push(@filters, $line);
-    }
-  }
+  my @filters = extract_filters($macro);
 
   # parse the input and output ports of this module
   my $my_interface = new ModuleSpec()->parse_prototype($self->{text});
@@ -2603,21 +2643,8 @@ sub expand_autointerface($$) {
     next unless ($s =~ m/[[:alpha:]]/);  # Must have a letter
     next if ($s =~ m/\W/);  # Must only contain "word" characters.
 
-    # If we have filters enabled, skip signals that don't match filters.
-    if ($#filters > -1) {
-      my $matched = 0;
-      $_ = $s;
-      foreach my $filt (@filters) {
-        my $result = eval($filt);
-        if ($result) {
-          $matched = 1;
-          last;
-        }
-      }
-      if (!$matched) {
-        next;
-      }
-    }
+    my $match = apply_filters($s, @filters);
+    if (!$match) { next; }
 
     # examine each net:
     my $ref = $self->{NETS}->{$s};
@@ -2776,15 +2803,7 @@ sub expand_autonet($$) {
     $style = $2;
   }
 
-  my @filters = ();
-  my @macro_lines = split(/\s*[\r\n]\s*/, $macro);
-  foreach my $line (@macro_lines) {
-    $line =~ s/^\s+//;
-    $line =~ s/\s+$//;
-    if ($line =~ m/^m/) {
-      push(@filters, $line);
-    }
-  }
+  my @filters = extract_filters($macro);
 
   # parse the input and output ports of this module
   my $my_interface = new ModuleSpec()->parse_prototype($self->{text});
@@ -2797,18 +2816,11 @@ sub expand_autonet($$) {
   my $cb_signals = new SignalSet();
 
   foreach my $s (@sigs) {
-    if ($#filters > -1) {
-      my $matched = 0;
-      $_ = $s;
-      foreach my $filt (@filters) {
-        my $result = eval($filt);
-        if ($result) { $matched = 1; }
-      }
-
-      if (!$matched) {
-        next;
-      }
+    my $match = apply_filters($s, @filters);
+    if (!$match) {
+      next;
     }
+
     # if signal is in this module's interface, autonet should
     # skip it:
     if ($my_interface->HasPort($s)) {
@@ -3054,7 +3066,7 @@ Currently, only one attribute is supported:
 * "SUBPATH=<path>"
 
 This attribute can be supplied multiple times, to specific multiple subpaths.
-This subpath specifies an additional path component to be searched for files
+This subpath specifies an additional path component to be searched for file  !m/^(dft_clk_en|dft_rst_n_bypass_in|dft_rst_n_bypass_en)/
 referred to by INST and FORINST macros.  The search is performed by iterating
 through each INCDIR path, and then looking for the file in each SUBPATH
 beneath each INCDIR path.
@@ -3671,6 +3683,18 @@ EOT
 # A simple configuration file parser.
 sub parse_config($) {
   my $configtext = shift;
+
+  my @data = split m/^\s*PERL:\s*$/mso, $configtext;
+  my $perlcode = "";
+  if ($#data > 0) {
+    $configtext = $data[0];
+    my $perlcode = $data[1];
+    eval($perlcode);
+    if ($@) {
+      print "PERL ERROR:\n$@\n";
+      print STDERR "PERL ERROR in config file:\n$@\n\n$perlcode\n";
+    }
+  }
 
   # remove comments
   $configtext =~ s/(?<!\\)#.*\n/\n/g;  # but not \#

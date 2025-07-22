@@ -17,3 +17,10 @@ disable_always_ff = 1
 
 manifest=./preproc.manifest
 
+PERL:
+
+sub foo($) {
+  my $x = shift;
+  $x =~ s/foo/bar/;
+  return $x;
+}

@@ -1,0 +1,81 @@
+// inst_of_unpacked instantiates an unpacked from unpacked.v
+
+module autonet_genvar (
+  input wire clk,
+  input wire reset_n );
+
+axi4_if axi(.clk, .reset_n);
+
+/**AUTONET --init --skipif **/
+/*PPSTART*/
+my_fancy_t[6-1:0][1:0] fwd_data;
+wire [6-1:0] fwd_ready;
+wire [6-1:0] fwd_valid;
+my_fancy_t[1:0] rev_data;
+reg  rev_ready = '0;
+wire  rev_valid;
+reg  rst_n = '{default: '0};
+/*PPSTOP*/
+
+/**INST typed_module.v typed_mod1 --style=v2 --indent_like_macro
+  parameter TYPE_T my_fancy_t[1:0]
+  s/rev_(\S+)/fwd_${1}[1]/;
+**/
+/*PPSTART*/
+typed_moduled #(
+  .TYPE_T(my_fancy_t[1:0])
+) typed_mod1 (
+  .clk,                       // input
+  .rst_n,                     // input
+  .fwd_data,                  // input
+  .fwd_valid,                 // input
+  .fwd_ready,                 // output
+  .rev_data   (fwd_data[1]),  // output
+  .rev_valid  (fwd_valid[1]), // output
+  .rev_ready  (fwd_ready[1])  // input
+);
+/*PPSTOP*/
+
+
+/**INST typed_module.v typed_mod0 --style=v2 --indent_like_macro
+  parameter TYPE_T my_fancy_t[1:0]
+  s/rev_(\S+)/fwd_${1}[0]/;
+**/
+/*PPSTART*/
+typed_moduled #(
+  .TYPE_T(my_fancy_t[1:0])
+) typed_mod0 (
+  .clk,                       // input
+  .rst_n,                     // input
+  .fwd_data,                  // input
+  .fwd_valid,                 // input
+  .fwd_ready,                 // output
+  .rev_data   (fwd_data[0]),  // output
+  .rev_valid  (fwd_valid[0]), // output
+  .rev_ready  (fwd_ready[0])  // input
+);
+/*PPSTOP*/
+
+for (array_dims ii = 0; ii < 6; ii++) begin : gen_instances
+  /**INST typed_module.v typed_module --style=v2 --indent_like_macro
+  parameter TYPE_T my_fancy_t[1:0]
+  array_dims ii 6-1:0
+  s/fwd_(\S+)/fwd_${1}[ii]/;
+  **/
+  /*PPSTART*/
+  typed_moduled #(
+    .TYPE_T(my_fancy_t[1:0])
+  ) typed_module (
+    .clk,                        // input
+    .rst_n,                      // input
+    .fwd_data   (fwd_data[ii]),  // input
+    .fwd_valid  (fwd_valid[ii]), // input
+    .fwd_ready  (fwd_ready[ii]), // output
+    .rev_data,                   // output
+    .rev_valid,                  // output
+    .rev_ready                   // input
+  );
+  /*PPSTOP*/
+end : gen_instances
+
+endmodule
