@@ -1973,6 +1973,7 @@ sub apply_filters($@) {
     }
   }
   if ($#$neg_filters_ref > -1) {
+    $_ = $text;
     foreach my $filt (@$neg_filters_ref) {
       my $result = eval($filt);
       if ($result) {
