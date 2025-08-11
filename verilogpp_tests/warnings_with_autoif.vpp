@@ -1,0 +1,124 @@
+// Validate the behavior of AUTONET --warn in the presence of AUTOINTERFACE.
+
+module warnings_with_autoif (
+  input wire clk,
+  input wire reset_n,
+  /**AUTOINTERFACE**/
+/*PPSTART*/
+  output wire [`AXI_ADDR_WORD]                              axi_araddr,
+  output wire [`AXI_ID_WORD]                                axi_arid,
+  output wire [`AXI_LEN_WORD]                               axi_arlen,
+  input  wire                                               axi_arready,
+  output wire                                               axi_arvalid,
+  input  wire [`AXI_DATA256_WORD]                           axi_rdata,
+  input  wire                                               axi_rlast,
+  output wire                                               axi_rready,
+  input  wire [`AXI_RESP_WORD]                              axi_rresp,
+  input  wire                                               axi_rvalid,
+  input  wire                                               bum_buffer_overflow,
+  input  wire [`HARD2PARSE_STATUS__WRITE_POINTER_WIDTH-1:0] bum_write_pointer,
+  input  wire                                               bum_write_pointer_valid,
+  input  wire [`HARD2PARSE_COMMAND_WORD]                    control_input,
+  output wire [`HARD2PARSE_STATUS_WORD]                     control_output,
+  output wire [15:0]                                        data_to_foobar,
+  output wire                                               data_to_foobar_valid,
+  input       word_t                                        foo_in_word,
+  input  wire                                               foobar_clear_to_send,
+  output wire                                               foobar_ready_to_send,
+  input       word_t                                        in_word,
+  input  wire [`HARD2PARSE_COMMAND__SLOT_WIDTH-1:0]         slot
+/*PPSTOP*/
+
+);
+
+/**AUTONET --warn **/
+/*PPSTART*/
+wire [`AXI_ID_WORD] axi_rid;
+wire [31:0] foo_in32;
+wire [31:0] in32;
+wire [31:0] out32;  // WARNING: multiple drivers (3 drivers)
+/*PPSTOP*/
+
+// this should disable the warning for axi_rid
+assign axi_rid = 5;
+assign foo_in32 = 32'd20;
+
+/**INST bar.v u_bar1**/
+/*PPSTART*/
+bar u_bar1 (
+  .in_word (in_word),
+  .clk (clk),
+  .reset_n (reset_n),
+  .in32 (in32),
+  .out32 (out32)
+);
+/*PPSTOP*/
+
+/**INST bar.v u_bar2**/
+/*PPSTART*/
+bar u_bar2 (
+  .in_word (in_word),
+  .clk (clk),
+  .reset_n (reset_n),
+  .in32 (in32),
+  .out32 (out32)
+);
+/*PPSTOP*/
+
+/**INST bar.v u_bar_invert
+  .in32(out32)
+  .out32(in32)
+**/
+/*PPSTART*/
+bar u_bar_invert (
+  .in_word (in_word),
+  .clk (clk),
+  .reset_n (reset_n),
+  .in32 (out32),
+  .out32 (in32)
+);
+/*PPSTOP*/
+
+/**INST hard2parse.v u_hard2parse**/
+/*PPSTART*/
+hard2parse u_hard2parse (
+  .clk (clk),
+  .reset_n (reset_n),
+  .slot (slot),
+  .control_input (control_input),
+  .control_output (control_output),
+  .foobar_ready_to_send (foobar_ready_to_send),
+  .foobar_clear_to_send (foobar_clear_to_send),
+  .data_to_foobar (data_to_foobar),
+  .data_to_foobar_valid (data_to_foobar_valid),
+  .axi_arid (axi_arid),
+  .axi_arready (axi_arready),
+  .axi_araddr (axi_araddr),
+  .axi_arlen (axi_arlen),
+  .axi_arvalid (axi_arvalid),
+  .axi_rid (axi_rid),
+  .axi_rresp (axi_rresp),
+  .axi_rvalid (axi_rvalid),
+  .axi_rdata (axi_rdata),
+  .axi_rlast (axi_rlast),
+  .axi_rready (axi_rready),
+  .bum_buffer_overflow (bum_buffer_overflow),
+  .bum_write_pointer_valid (bum_write_pointer_valid),
+  .bum_write_pointer (bum_write_pointer)
+);
+/*PPSTOP*/
+
+/**INST bar.v u_bar9 --compact
+  s/^in/foo_in/;
+**/
+/*PPSTART*/
+bar u_bar9 (
+  .in_word (foo_in_word),
+  .clk,
+  .reset_n,
+  .in32 (foo_in32),
+  .out32
+);
+/*PPSTOP*/
+
+endmodule

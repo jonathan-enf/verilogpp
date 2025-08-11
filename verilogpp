@@ -1819,11 +1819,17 @@ sub parse_instantiate_macro($$) {
   # parse out overrides
   #
   my %OVERRIDES = ();
-  while ($macro =~ s/^\s*\.(\S+)\s*\(\s*(.*?)\s*\)\s*,?\s*$//mso) {
+  # support ".foo (bar)" style connections
+  while ($macro =~ s/^\s*\.(\S+)\s*\(\s*(.*?)\s*\)\s*,?\s*$//mo) {
     $OVERRIDES{$1} = $2;
+  }
+  # support ".foo" style connections
+  while ($macro =~ s/^\s*\.(\S+?)\s*,?\s*$//mo) {
+    $OVERRIDES{$1} = $1;
   }
   $mapper->{OVERRIDES} = \%OVERRIDES;
 
+  # the rest is perl
   $mapper->{PERL} = $macro;
 
   return $mapper;

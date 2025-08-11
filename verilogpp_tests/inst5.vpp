@@ -1,0 +1,48 @@
+/**INST bus_keeper.v keeper7 --style=v3
+  parameter WIDTH $bits(bus1_in)
+  .clk (clk)
+  .rst_n (rst_n)
+  s/_in$/innie/;
+  if($_ eq $signal) { if ($dir eq "input") { $_ = "'0"; } else { $_ = ""; } }
+**/
+/*PPSTART*/
+bus_keeper #(
+  .WIDTH                         ($bits(bus1_in))
+) keeper7 (
+  .clk,                                                          // input
+  .reset_n                       ('0),                           // input
+  .busNNN_valid                  ('0),                           // input
+  .busNNN_in                     (busNNNinnie),                  // input
+  .busNNN_out                    ()                              // output
+);
+/*PPSTOP*/
+
+/**FORINST bus_keeper.v keeper 1 2 3 --style=v3
+  .clk,
+  .reset_n
+  s/NNN/${enumerator}/g;
+  if ($dir eq "input") { $_ = "`0"; } else {$_ = ""; }
+**/
+/*PPSTART*/
+bus_keeper keeper_1 (
+  .clk,                                                          // input
+  .reset_n,                                                      // input
+  .busNNN_valid                  (`0),                           // input
+  .busNNN_in                     (`0),                           // input
+  .busNNN_out                    ()                              // output
+);
+bus_keeper keeper_2 (
+  .clk,                                                          // input
+  .reset_n,                                                      // input
+  .busNNN_valid                  (`0),                           // input
+  .busNNN_in                     (`0),                           // input
+  .busNNN_out                    ()                              // output
+);
+bus_keeper keeper_3 (
+  .clk,                                                          // input
+  .reset_n,                                                      // input
+  .busNNN_valid                  (`0),                           // input
+  .busNNN_in                     (`0),                           // input
+  .busNNN_out                    ()                              // output
+);
+/*PPSTOP*/
