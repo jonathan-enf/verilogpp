@@ -21,10 +21,10 @@ wire  foo_en[0:5];
 /*PPSTOP*/
 
 /**AUTONC
-  weep
-  woe
+  /weep/
+  /woe/
   /output$/
-  bar
+  /bar/
   /^foo/
 **/
 /*PPSTART*/
