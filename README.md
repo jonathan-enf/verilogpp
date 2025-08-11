@@ -776,6 +776,11 @@ ports of INST-instantiated submodules.  Additionally, the AUTOINTERFACE macro
 can be used to propagate unbound ports from INST-instantiated submodules to the
 module interface.
 
+Additionally, the "$dir" variable is available in the mapping context,
+and can be used like this:
+
+      if ($dir eq "input") { $_ = "'0"; }
+
 Options:
 
 * --pretty  Turns on "pretty print" style (equivalent to --style=pretty).

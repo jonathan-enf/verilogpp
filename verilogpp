@@ -2161,6 +2161,11 @@ ports of INST-instantiated submodules.  Additionally, the AUTOINTERFACE macro
 can be used to propagate unbound ports from INST-instantiated submodules to the
 module interface.
 
+Additionally, the "\$dir" variable is available in the mapping context,
+and can be used like this:
+
+      if (\$dir eq "input") { \$_ = "'0"; }
+
 Options:
 
 * --pretty  Turns on "pretty print" style (equivalent to --style=pretty).
@@ -2276,7 +2281,7 @@ sub expand_instantiate_with_prototype {
   my @list_of_hookup_arrs = ();
   foreach my $signal (@signals) {
     my $ps = $prototype->{ports}->{$signal};
-    my $dir = $ps->{direction};
+    my $dir = $ps->io();
     my $mapped_signal = $self->apply_mapper($mapper, $signal, $enumerator, $dir);
 
     my $hookup;
@@ -2290,7 +2295,6 @@ sub expand_instantiate_with_prototype {
     foreach my $key (keys %{$mapper->{LOCALPARAMS}}) {
       $width =~ s/\b${key}\b/$mapper->{LOCALPARAMS}->{$key}/g;
     }
-    my $dir = $prototype->{ports}->{$signal}->io();
     if ($prettyprint) {
       $hookup = sprintf ".%-25s (%-25s) // %6s",
           $signal, $mapped_signal, $dir;
@@ -3056,7 +3060,7 @@ Currently, only one attribute is supported:
 * "SUBPATH=<path>"
 
 This attribute can be supplied multiple times, to specific multiple subpaths.
-This subpath specifies an additional path component to be searched for file  !m/^(dft_clk_en|dft_rst_n_bypass_in|dft_rst_n_bypass_en)/
+This subpath specifies an additional path component to be searched for files
 referred to by INST and FORINST macros.  The search is performed by iterating
 through each INCDIR path, and then looking for the file in each SUBPATH
 beneath each INCDIR path.
